@@ -23,6 +23,34 @@
       position: relative;
     }
 
+    .global-logo {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      z-index: 1000;
+      height: 40px;
+      width: auto;
+    }
+
+    .global-logout {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      z-index: 1000;
+      background: rgba(255, 0, 0, 0.5);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .global-logout:hover {
+      background: rgba(255, 0, 0, 0.7);
+    }
+
     .bg-video {
       position: fixed;
       top: 0;
@@ -82,8 +110,25 @@
       padding: 20px 32px;
       font-weight: 600;
       font-size: 26px;
-      text-align: center;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       flex-shrink: 0;
+    }
+
+    #view-requests-btn {
+      background: rgba(255, 204, 0, 0.9);
+      color: #000;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    #view-requests-btn:hover {
+      background: rgba(255, 204, 0, 1);
     }
 
     .chat-content {
@@ -92,6 +137,7 @@
       flex: 1;
       padding: 0 32px;
       overflow: hidden;
+      position: relative;
     }
 
     .chat-messages {
@@ -105,7 +151,6 @@
       margin-top: 16px;
     }
 
-    /* Красивый скроллбар */
     .chat-messages::-webkit-scrollbar {
       width: 12px;
     }
@@ -121,10 +166,6 @@
     }
     .chat-messages::-webkit-scrollbar-thumb:hover {
       background: linear-gradient(135deg, #55d6be, #3ab19f);
-    }
-    .chat-messages {
-      scrollbar-width: thin;
-      scrollbar-color: #55d6be rgba(64, 64, 64, 0.3);
     }
 
     .message {
@@ -275,25 +316,30 @@
       font-size: 14px;
     }
 
-    .filter-icon {
-      margin-top: auto;
+    .filter-button {
       background: linear-gradient(135deg, #7bed9f, #55d6be);
-      width: 72px;
-      height: 72px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 18px;
+      width: fit-content;
+      padding: 12px 28px;
+      border-radius: 20px;
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
       margin-left: auto;
       margin-right: auto;
       cursor: pointer;
+      text-align: center;
     }
 
-    .filter-icon svg {
-      width: 32px;
-      height: 32px;
-      fill: white;
+    .view-all-btn {
+      background: rgba(64, 64, 64, 0.8);
+      color: white;
+      font-size: 16px;
+      padding: 10px 20px;
+      border-radius: 20px;
+      cursor: pointer;
+      text-align: center;
+      margin-top: 10px;
     }
 
     .calendar-box {
@@ -368,31 +414,199 @@
     }
 
     .day.has-event {
-      background: #cccccc;
-      color: #000;
+      background: rgba(0, 0, 0, 0.5);
+      color: #fff;
     }
 
     .day:hover {
       background: rgba(0, 0, 0, 0.05);
     }
+
+    #events-sidebar {
+      position: fixed;
+      top: 0;
+      right: -400px;
+      width: 400px;
+      height: 100%;
+      background: rgba(25, 25, 25, 0.96);
+      color: white;
+      padding: 32px;
+      overflow-y: auto;
+      z-index: 1001;
+      transition: right 0.3s ease;
+      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.6);
+    }
+
+    #events-sidebar.active {
+      right: 0;
+    }
+
+    #events-sidebar-header {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #close-sidebar {
+      background: #444;
+      border: none;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .event-item {
+      background: rgba(60, 60, 60, 0.6);
+      padding: 16px;
+      margin-bottom: 16px;
+      border-radius: 14px;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .event-meta {
+      color: #7bed9f;
+      font-size: 14px;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .event-title {
+      font-weight: 600;
+      font-size: 16px;
+      margin-bottom: 6px;
+      color: white;
+    }
+
+    .no-events {
+      color: #888;
+      font-style: italic;
+      text-align: center;
+      padding: 20px;
+    }
+
+    #requests-sidebar {
+      position: fixed;
+      top: 0;
+      left: -400px;
+      width: 400px;
+      height: 100%;
+      background: rgba(25, 25, 25, 0.96);
+      color: white;
+      padding: 32px;
+      overflow-y: auto;
+      z-index: 100;
+      transition: left 0.3s ease;
+      box-shadow: 4px 0 20px rgba(0, 0, 0, 0.6);
+    }
+
+    #requests-sidebar.active {
+      left: 0;
+    }
+
+    #requests-sidebar-header {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #close-requests-sidebar {
+      background: #444;
+      border: none;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .request-item {
+      background: rgba(60, 60, 60, 0.6);
+      padding: 16px;
+      margin-bottom: 16px;
+      border-radius: 14px;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .request-meta {
+      color: #ffcc00;
+      font-size: 14px;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .request-title {
+      font-weight: 600;
+      font-size: 16px;
+      margin-bottom: 6px;
+      color: white;
+    }
+
+    .request-actions {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .request-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .btn-approve { background: #2ed573; color: white; }
+    .btn-reject { background: #ff4757; color: white; }
+
+    .no-requests {
+      color: #888;
+      font-style: italic;
+      text-align: center;
+      padding: 20px;
+    }
   </style>
 </head>
 <body>
+  <form method="POST" action="/logout" style="position: absolute; top: 15px; right: 15px; z-index: 1000;">
+    <button type="submit" class="global-logout">Выйти</button>
+  </form>
+
   <video class="bg-video" autoplay muted loop playsinline>
     <source src="{{ url_for('static', filename='video.mp4') }}" type="video/mp4">
-    Ваш браузер не поддерживает видео.
   </video>
   <div class="overlay"></div>
 
   <div id="app">
     <div class="container">
-      <!-- Чат -->
       <div class="left-panel">
-        <div class="header">Агент, который помогает планировать</div>
+        <div class="header">
+          <span>Агент, который помогает планировать</span>
+          {% if user_type == 'руководитель' or user_type == 'admin' %}
+            <button id="view-requests-btn">🔔 Заявки</button>
+          {% endif %}
+        </div>
         <div class="chat-content">
           <div class="chat-messages" id="chat-messages">
             <div class="message bot">
-              Привет! Я помогу тебе найти нужные мероприятия и спланировать календарь. Используй поле для ввода или отправь запрос с помощью фильтра.
+              Привет! Я помогу найти подходящие IT-мероприятия. Введите запрос или используйте фильтры.
             </div>
           </div>
           <div class="input-area">
@@ -471,11 +685,8 @@
             </select>
           </div>
         </div>
-        <div class="filter-icon" id="apply-filters">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-            <path d="M12 2L2 7l10 5 10-5M2 12l10 5 10-5M2 12v5l10 5m0 0v-5M12 17v5l10-5M2 7v5l10 5" stroke="white" stroke-width="2" fill="none"/>
-          </svg>
-        </div>
+        <div class="filter-button" id="apply-filters">Фильтры</div>
+        <div class="view-all-btn" id="view-all-btn">Все мероприятия</div>
 
         <div class="calendar-box">
           <div class="calendar-controls">
@@ -500,62 +711,62 @@
     </div>
   </div>
 
+  <div id="events-sidebar">
+    <div id="events-sidebar-header">
+      Все мероприятия
+      <button id="close-sidebar">×</button>
+    </div>
+    <div id="all-events-list"></div>
+  </div>
+
+  <div id="requests-sidebar">
+    <div id="requests-sidebar-header">
+      Заявки от сотрудников
+      <button id="close-requests-sidebar">×</button>
+    </div>
+    <div id="manager-requests-list"></div>
+  </div>
+
   <script>
+    const USER_TYPE = "{{ user_type }}";
+    const USER_LOGIN = "{{ session.get('user_login', '') }}";
+
     document.addEventListener('DOMContentLoaded', function() {
       const chatMessages = document.getElementById('chat-messages');
       const userInput = document.getElementById('user-input');
       const sendBtn = document.getElementById('send-btn');
       const applyFiltersBtn = document.getElementById('apply-filters');
+      const viewAllBtn = document.getElementById('view-all-btn');
+      const closeSidebarBtn = document.getElementById('close-sidebar');
+      const eventsSidebar = document.getElementById('events-sidebar');
+      const allEventsList = document.getElementById('all-events-list');
       const yearInput = document.getElementById('year-input');
+
+      const viewRequestsBtn = document.getElementById('view-requests-btn');
+      const requestsSidebar = document.getElementById('requests-sidebar');
+      const closeRequestsSidebarBtn = document.getElementById('close-requests-sidebar');
+      const managerRequestsList = document.getElementById('manager-requests-list');
 
       let currentYear = new Date().getFullYear();
       let currentMonth = new Date().getMonth();
       let eventsMap = {};
 
       yearInput.value = currentYear;
-      renderCalendar();
 
-      function parseDateForCalendar(dateStr) {
-        const months = {
-          'янв': '01', 'фев': '02', 'мар': '03', 'апр': '04',
-          'мая': '05', 'июн': '06', 'июл': '07', 'авг': '08',
-          'сен': '09', 'окт': '10', 'ноя': '11', 'дек': '12'
-        };
-
-        let match = dateStr.match(/(\d{1,2})\.(\d{1,2})\.(\d{2,4})/);
-        if (match) {
-          const year = match[3].length === 2 
-            ? (parseInt(match[3]) < 50 ? '20' + match[3] : '19' + match[3])
-            : match[3];
-          return `${year}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`;
-        }
-
-        match = dateStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{2})/);
-        if (match) {
-          const year = parseInt(match[3]) + (parseInt(match[3]) < 50 ? 2000 : 1900);
-          return `${year}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`;
-        }
-
-        match = dateStr.match(/(\d{1,2})\s+([а-яё]+)/i);
-        if (match) {
-          const day = match[1].padStart(2, '0');
-          const monthKey = match[2].substring(0, 3).toLowerCase();
-          const month = months[monthKey];
-          if (month) {
-            const year = new Date().getFullYear();
-            return `${year}-${month}-${day}`;
+      fetch('/get_future_events')
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            updateCalendarFromEvents(data.events);
           }
-        }
-        return null;
-      }
+        });
 
       function updateCalendarFromEvents(events) {
         eventsMap = {};
         events.forEach(ev => {
-          const isoDate = parseDateForCalendar(ev.date);
-          if (isoDate) {
-            if (!eventsMap[isoDate]) eventsMap[isoDate] = [];
-            eventsMap[isoDate].push(ev);
+          if (ev.date && /^\d{4}-\d{2}-\d{2}$/.test(ev.date)) {
+            if (!eventsMap[ev.date]) eventsMap[ev.date] = [];
+            eventsMap[ev.date].push(ev);
           }
         });
         renderCalendar();
@@ -583,26 +794,55 @@
         }
 
         for (let day = 1; day <= daysInMonth; day++) {
-          const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          const hasEvent = eventsMap[dateStr] && eventsMap[dateStr].length > 0;
+          const isoDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const hasEvent = eventsMap[isoDate] && eventsMap[isoDate].length > 0;
 
           const dayEl = document.createElement('div');
           dayEl.className = `day ${hasEvent ? 'has-event' : ''}`;
           dayEl.textContent = day;
-          dayEl.dataset.date = dateStr;
+          dayEl.dataset.date = isoDate;
 
           dayEl.addEventListener('click', () => {
-            const events = eventsMap[dateStr] || [];
-            const msg = document.createElement('div');
-            msg.className = 'message bot';
-            if (events.length > 0) {
-              msg.innerHTML = `<strong>Мероприятия на ${dateStr}:</strong><br>` +
-                events.map(e => `- ${e.text}`).join('<br>');
-            } else {
-              msg.textContent = `По вашему запросу мероприятий на ${dateStr} не найдено.`;
+            const events = eventsMap[isoDate] || [];
+            if (events.length === 0) {
+              alert('Нет мероприятий на эту дату.');
+              return;
             }
-            chatMessages.appendChild(msg);
-            scrollToBottom();
+            const event = events[0];
+            const message = `Зарегистрироваться на мероприятие?\n\n${event.text}`;
+            if (USER_TYPE === 'user') {
+              if (confirm(message)) {
+                fetch('/request_registration', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    event_date: isoDate,
+                    event_text: event.text
+                  })
+                })
+                .then(r => r.json())
+                .then(data => {
+                  alert(data.message || 'Ошибка отправки запроса.');
+                })
+                .catch(() => alert('Не удалось отправить запрос.'));
+              }
+            } else {
+              if (confirm(message)) {
+                fetch('/request_registration', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    event_date: isoDate,
+                    event_text: event.text
+                  })
+                })
+                .then(r => r.json())
+                .then(data => {
+                  alert(data.message || 'Успешно зарегистрированы!');
+                })
+                .catch(() => alert('Ошибка регистрации.'));
+              }
+            }
           });
 
           grid.appendChild(dayEl);
@@ -610,22 +850,14 @@
       }
 
       document.getElementById('prev-month').addEventListener('click', () => {
-        if (currentMonth === 0) {
-          currentMonth = 11;
-          currentYear--;
-        } else {
-          currentMonth--;
-        }
+        if (currentMonth === 0) { currentMonth = 11; currentYear--; }
+        else currentMonth--;
         renderCalendar();
       });
 
       document.getElementById('next-month').addEventListener('click', () => {
-        if (currentMonth === 11) {
-          currentMonth = 0;
-          currentYear++;
-        } else {
-          currentMonth++;
-        }
+        if (currentMonth === 11) { currentMonth = 0; currentYear++; }
+        else currentMonth++;
         renderCalendar();
       });
 
@@ -745,6 +977,133 @@
           scrollToBottom();
         });
       });
+
+      viewAllBtn.addEventListener('click', () => {
+        allEventsList.innerHTML = '<p>Загрузка...</p>';
+        eventsSidebar.classList.add('active');
+
+        fetch('/get_all_events', { method: 'GET' })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              let html = '';
+
+              if (data.active && data.active.length > 0) {
+                html += '<h3 style="color:#7bed9f; margin:16px 0 12px; border-bottom:1px solid #444; padding-bottom:6px;">Актуальные</h3>';
+                html += data.active.map(ev => {
+                  const metaParts = [];
+                  if (ev.city) metaParts.push(ev.city);
+                  if (ev.type) metaParts.push(ev.type);
+                  return `
+                    <div class="event-item">
+                      <div class="event-meta">${ev.date}${metaParts.length ? ' • ' + metaParts.join(' • ') : ''}</div>
+                      <div class="event-title">${ev.title || 'Без названия'}</div>
+                    </div>
+                  `;
+                }).join('');
+              }
+
+              if (data.past && data.past.length > 0) {
+                html += '<h3 style="color:#ff6b6b; margin:24px 0 12px; border-bottom:1px solid #444; padding-bottom:6px;">Прошедшие</h3>';
+                html += data.past.map(ev => {
+                  const metaParts = [];
+                  if (ev.city) metaParts.push(ev.city);
+                  if (ev.type) metaParts.push(ev.type);
+                  return `
+                    <div class="event-item">
+                      <div class="event-meta" style="color:#aaa;">${ev.date}${metaParts.length ? ' • ' + metaParts.join(' • ') : ''}</div>
+                      <div class="event-title" style="color:#ccc;">${ev.title || 'Без названия'}</div>
+                    </div>
+                  `;
+                }).join('');
+              }
+
+              if (!html) {
+                html = '<p class="no-events">Мероприятия отсутствуют.</p>';
+              }
+              allEventsList.innerHTML = html;
+            } else {
+              allEventsList.innerHTML = '<p class="no-events">Не удалось загрузить мероприятия.</p>';
+            }
+          })
+          .catch(() => {
+            allEventsList.innerHTML = '<p class="no-events">Ошибка сети.</p>';
+          });
+      });
+
+      closeSidebarBtn.addEventListener('click', () => {
+        eventsSidebar.classList.remove('active');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (eventsSidebar.classList.contains('active') &&
+            !eventsSidebar.contains(e.target) &&
+            !viewAllBtn.contains(e.target)) {
+          eventsSidebar.classList.remove('active');
+        }
+      });
+
+      // === ВАЖНО: функция для загрузки заявок ===
+      function loadManagerRequests() {
+        fetch('/get_manager_requests')
+          .then(r => r.json())
+          .then(data => {
+            const list = data.requests || [];
+            if (list.length === 0) {
+              managerRequestsList.innerHTML = '<p class="no-requests">Нет новых заявок.</p>';
+            } else {
+              managerRequestsList.innerHTML = list.map(req => `
+                <div class="request-item">
+                  <div class="request-meta">${req.user_fio} • ${req.event_date}</div>
+                  <div class="request-title">${req.event_text}</div>
+                  <div class="request-actions">
+                    <button class="request-btn btn-approve" onclick="handleRequestAction('${req.user_login}', '${req.event_date}', 'approved')">✅ Принять</button>
+                    <button class="request-btn btn-reject" onclick="handleRequestAction('${req.user_login}', '${req.event_date}', 'rejected')">❌ Отклонить</button>
+                  </div>
+                </div>
+              `).join('');
+            }
+          })
+          .catch(() => {
+            managerRequestsList.innerHTML = '<p class="no-requests">Ошибка загрузки.</p>';
+          });
+      }
+
+      if (viewRequestsBtn) {
+        viewRequestsBtn.addEventListener('click', () => {
+          managerRequestsList.innerHTML = '<p>Загрузка...</p>';
+          requestsSidebar.classList.add('active');
+          loadManagerRequests(); // ← загружаем при открытии
+        });
+      }
+
+      if (closeRequestsSidebarBtn) {
+        closeRequestsSidebarBtn.addEventListener('click', () => {
+          requestsSidebar.classList.remove('active');
+        });
+      }
+
+      document.addEventListener('click', (e) => {
+        if (requestsSidebar.classList.contains('active') &&
+            !requestsSidebar.contains(e.target) &&
+            viewRequestsBtn && !viewRequestsBtn.contains(e.target)) {
+          requestsSidebar.classList.remove('active');
+        }
+      });
+
+      // === Обработка заявки с обновлением списка ===
+      window.handleRequestAction = function(user_login, event_date, status) {
+        fetch('/update_request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_login, event_date, status })
+        })
+        .then(() => {
+          // Обновляем список — заявка исчезнет
+          loadManagerRequests();
+        })
+        .catch(() => alert('Ошибка обработки заявки.'));
+      };
 
       scrollToBottom();
     });
