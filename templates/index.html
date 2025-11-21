@@ -1,1 +1,753 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Агент планирования</title>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Google Sans', sans-serif;
+    }
 
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      background-color: #000;
+      position: relative;
+    }
+
+    .bg-video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -3;
+      pointer-events: none;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: -2;
+    }
+
+    #app {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 20px;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .container {
+      display: flex;
+      gap: 72px;
+      height: 100%;
+      max-width: 100%;
+      overflow: visible;
+    }
+
+    .left-panel {
+      background: rgba(128, 128, 128, 0.7);
+      border-radius: 28px;
+      width: 960px;
+      height: 100%;
+      max-height: 900px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 6px 32px rgba(0, 0, 0, 0.15);
+    }
+
+    .header {
+      background: rgba(64, 64, 64, 0.9);
+      color: white;
+      padding: 20px 32px;
+      font-weight: 600;
+      font-size: 26px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .chat-content {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      padding: 0 32px;
+      overflow: hidden;
+    }
+
+    .chat-messages {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 16px 0;
+      margin-top: 16px;
+    }
+
+    /* Красивый скроллбар */
+    .chat-messages::-webkit-scrollbar {
+      width: 12px;
+    }
+    .chat-messages::-webkit-scrollbar-track {
+      background: rgba(64, 64, 64, 0.3);
+      border-radius: 10px;
+    }
+    .chat-messages::-webkit-scrollbar-thumb {
+      background: linear-gradient(135deg, #7bed9f, #55d6be);
+      border-radius: 10px;
+      border: 3px solid transparent;
+      background-clip: content-box;
+    }
+    .chat-messages::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(135deg, #55d6be, #3ab19f);
+    }
+    .chat-messages {
+      scrollbar-width: thin;
+      scrollbar-color: #55d6be rgba(64, 64, 64, 0.3);
+    }
+
+    .message {
+      padding: 16px 24px;
+      font-size: 16px;
+      line-height: 1.5;
+      word-wrap: break-word;
+      max-width: 80%;
+      border-radius: 20px;
+    }
+
+    .message.bot {
+      background: rgba(96, 96, 96, 0.8);
+      color: white;
+      align-self: flex-start;
+      border-radius: 20px 20px 20px 0;
+    }
+
+    .message.user {
+      background: linear-gradient(135deg, #7bed9f, #55d6be);
+      color: white;
+      align-self: flex-end;
+      border-radius: 20px 20px 0 20px;
+    }
+
+    .input-area {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      flex-shrink: 0;
+      padding: 0 0 32px;
+      margin-top: auto;
+    }
+
+    .file-button {
+      background: rgba(64, 64, 64, 0.8);
+      color: white;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      align-self: flex-start;
+    }
+
+    .search-input-wrapper {
+      display: flex;
+      align-items: center;
+      background: rgba(64, 64, 64, 0.8);
+      border-radius: 20px;
+      padding: 16px 24px;
+      gap: 16px;
+    }
+
+    .search-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 16px;
+      outline: none;
+    }
+
+    .send-button {
+      background: linear-gradient(135deg, #7bed9f, #55d6be);
+      color: white;
+      border-radius: 50%;
+      width: 52px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .send-button svg {
+      width: 24px;
+      height: 24px;
+      fill: white;
+    }
+
+    .right-panel {
+      background: rgba(128, 128, 128, 0.7);
+      border-radius: 28px;
+      padding: 32px;
+      width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      box-shadow: 0 6px 32px rgba(0, 0, 0, 0.15);
+      max-height: 900px;
+      overflow: visible;
+    }
+
+    .right-header {
+      color: white;
+      font-weight: 600;
+      font-size: 26px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .filter-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .label {
+      color: white;
+      font-size: 16px;
+      min-width: 160px;
+    }
+
+    .custom-select select,
+    .date-input,
+    .year-input {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background: rgba(96, 96, 96, 0.8);
+      color: white;
+      border: none;
+      border-radius: 20px;
+      padding: 12px 20px;
+      font-size: 16px;
+      width: 100%;
+      cursor: pointer;
+      outline: none;
+      font-family: 'Google Sans', sans-serif;
+    }
+
+    .custom-select {
+      position: relative;
+      flex: 1;
+    }
+
+    .custom-select::after {
+      content: "▼";
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: white;
+      pointer-events: none;
+      font-size: 14px;
+    }
+
+    .filter-icon {
+      margin-top: auto;
+      background: linear-gradient(135deg, #7bed9f, #55d6be);
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+      margin-left: auto;
+      margin-right: auto;
+      cursor: pointer;
+    }
+
+    .filter-icon svg {
+      width: 32px;
+      height: 32px;
+      fill: white;
+    }
+
+    .calendar-box {
+      background: white;
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .calendar-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+
+    .month-nav {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-btn {
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: black;
+      padding: 4px 8px;
+    }
+
+    #current-month {
+      font-size: 18px;
+      font-weight: bold;
+      color: black;
+    }
+
+    .year-input {
+      width: 80px;
+      text-align: center;
+      font-size: 16px;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      width: 100%;
+    }
+
+    .weekday {
+      font-size: 12px;
+      color: #888;
+      text-align: center;
+    }
+
+    .day {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: #888;
+      cursor: pointer;
+      border-radius: 50%;
+      transition: background 0.2s;
+    }
+
+    .day.has-event {
+      background: #cccccc;
+      color: #000;
+    }
+
+    .day:hover {
+      background: rgba(0, 0, 0, 0.05);
+    }
+  </style>
+</head>
+<body>
+  <video class="bg-video" autoplay muted loop playsinline>
+    <source src="{{ url_for('static', filename='video.mp4') }}" type="video/mp4">
+    Ваш браузер не поддерживает видео.
+  </video>
+  <div class="overlay"></div>
+
+  <div id="app">
+    <div class="container">
+      <!-- Чат -->
+      <div class="left-panel">
+        <div class="header">Агент, который помогает планировать</div>
+        <div class="chat-content">
+          <div class="chat-messages" id="chat-messages">
+            <div class="message bot">
+              Привет! Я помогу тебе найти нужные мероприятия и спланировать календарь. Используй поле для ввода или отправь запрос с помощью фильтра.
+            </div>
+          </div>
+          <div class="input-area">
+            <div class="file-button">📎 загрузка файла</div>
+            <div class="search-input-wrapper">
+              <input type="text" class="search-input" id="user-input" placeholder="например: хакатон по ИИ в Санкт-Петербурге">
+              <div class="send-button" id="send-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="right-panel">
+        <div class="right-header">Мероприятие</div>
+        <div class="filter-row">
+          <div class="label">Город:</div>
+          <div class="custom-select">
+            <select id="city-filter">
+              <option value="">выбрать город</option>
+              <option value="Санкт-Петербург">Санкт-Петербург</option>
+              <option value="Калининград">Калининград</option>
+              <option value="Мурманск">Мурманск</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-row">
+          <div class="label">Дата:</div>
+          <input type="text" class="date-input" id="date-filter" placeholder="например: 25.11.25">
+        </div>
+        <div class="filter-row">
+          <div class="label">Гости:</div>
+          <div class="custom-select">
+            <select id="guests-filter">
+              <option value="">любое количество</option>
+              <option value="1-5">1–5</option>
+              <option value="5-10">5–10</option>
+              <option value="10-20">10–20</option>
+              <option value="20-50">20–50</option>
+              <option value="50-100">50–100</option>
+              <option value="100-200">100–200</option>
+              <option value="200-500">200–500</option>
+              <option value="500-1000">500–1000</option>
+              <option value="1000+">1000+</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-row">
+          <div class="label">Спикеры:</div>
+          <div class="custom-select">
+            <select id="speakers-filter">
+              <option value="">любое количество</option>
+              <option value="1-3">1–3</option>
+              <option value="3-5">3–5</option>
+              <option value="5-10">5–10</option>
+              <option value="10-20">10–20</option>
+              <option value="20-50">20–50</option>
+              <option value="50+">50+</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-row">
+          <div class="label">Тип:</div>
+          <div class="custom-select">
+            <select id="type-filter">
+              <option value="">любой тип</option>
+              <option value="хакатон">Хакатон</option>
+              <option value="митап">Митап</option>
+              <option value="конференция">Конференция</option>
+              <option value="воркшоп">Воркшоп</option>
+              <option value="лекция">Лекция</option>
+              <option value="форум">Форум</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-icon" id="apply-filters">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M12 2L2 7l10 5 10-5M2 12l10 5 10-5M2 12v5l10 5m0 0v-5M12 17v5l10-5M2 7v5l10 5" stroke="white" stroke-width="2" fill="none"/>
+          </svg>
+        </div>
+
+        <div class="calendar-box">
+          <div class="calendar-controls">
+            <div class="month-nav">
+              <button class="nav-btn" id="prev-month">←</button>
+              <div id="current-month">Ноябрь</div>
+              <button class="nav-btn" id="next-month">→</button>
+            </div>
+            <input type="text" class="year-input" id="year-input" placeholder="ГГГГ" maxlength="4">
+          </div>
+          <div class="calendar-grid" id="calendar-grid">
+            <div class="weekday">Пн</div>
+            <div class="weekday">Вт</div>
+            <div class="weekday">Ср</div>
+            <div class="weekday">Чт</div>
+            <div class="weekday">Пт</div>
+            <div class="weekday">Сб</div>
+            <div class="weekday">Вс</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const chatMessages = document.getElementById('chat-messages');
+      const userInput = document.getElementById('user-input');
+      const sendBtn = document.getElementById('send-btn');
+      const applyFiltersBtn = document.getElementById('apply-filters');
+      const yearInput = document.getElementById('year-input');
+
+      let currentYear = new Date().getFullYear();
+      let currentMonth = new Date().getMonth();
+      let eventsMap = {};
+
+      yearInput.value = currentYear;
+      renderCalendar();
+
+      function parseDateForCalendar(dateStr) {
+        const months = {
+          'янв': '01', 'фев': '02', 'мар': '03', 'апр': '04',
+          'мая': '05', 'июн': '06', 'июл': '07', 'авг': '08',
+          'сен': '09', 'окт': '10', 'ноя': '11', 'дек': '12'
+        };
+
+        let match = dateStr.match(/(\d{1,2})\.(\d{1,2})\.(\d{2,4})/);
+        if (match) {
+          const year = match[3].length === 2 
+            ? (parseInt(match[3]) < 50 ? '20' + match[3] : '19' + match[3])
+            : match[3];
+          return `${year}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`;
+        }
+
+        match = dateStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{2})/);
+        if (match) {
+          const year = parseInt(match[3]) + (parseInt(match[3]) < 50 ? 2000 : 1900);
+          return `${year}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`;
+        }
+
+        match = dateStr.match(/(\d{1,2})\s+([а-яё]+)/i);
+        if (match) {
+          const day = match[1].padStart(2, '0');
+          const monthKey = match[2].substring(0, 3).toLowerCase();
+          const month = months[monthKey];
+          if (month) {
+            const year = new Date().getFullYear();
+            return `${year}-${month}-${day}`;
+          }
+        }
+        return null;
+      }
+
+      function updateCalendarFromEvents(events) {
+        eventsMap = {};
+        events.forEach(ev => {
+          const isoDate = parseDateForCalendar(ev.date);
+          if (isoDate) {
+            if (!eventsMap[isoDate]) eventsMap[isoDate] = [];
+            eventsMap[isoDate].push(ev);
+          }
+        });
+        renderCalendar();
+      }
+
+      function renderCalendar() {
+        const shortMonthNames = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн",
+          "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
+
+        document.getElementById('current-month').textContent = shortMonthNames[currentMonth];
+        yearInput.value = currentYear;
+
+        const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+        const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+        const grid = document.getElementById('calendar-grid');
+        
+        while (grid.children.length > 7) grid.removeChild(grid.lastChild);
+
+        const startDay = (firstDay === 0) ? 6 : firstDay - 1;
+
+        for (let i = 0; i < startDay; i++) {
+          const empty = document.createElement('div');
+          empty.className = 'day empty';
+          grid.appendChild(empty);
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+          const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const hasEvent = eventsMap[dateStr] && eventsMap[dateStr].length > 0;
+
+          const dayEl = document.createElement('div');
+          dayEl.className = `day ${hasEvent ? 'has-event' : ''}`;
+          dayEl.textContent = day;
+          dayEl.dataset.date = dateStr;
+
+          dayEl.addEventListener('click', () => {
+            const events = eventsMap[dateStr] || [];
+            const msg = document.createElement('div');
+            msg.className = 'message bot';
+            if (events.length > 0) {
+              msg.innerHTML = `<strong>Мероприятия на ${dateStr}:</strong><br>` +
+                events.map(e => `- ${e.text}`).join('<br>');
+            } else {
+              msg.textContent = `По вашему запросу мероприятий на ${dateStr} не найдено.`;
+            }
+            chatMessages.appendChild(msg);
+            scrollToBottom();
+          });
+
+          grid.appendChild(dayEl);
+        }
+      }
+
+      document.getElementById('prev-month').addEventListener('click', () => {
+        if (currentMonth === 0) {
+          currentMonth = 11;
+          currentYear--;
+        } else {
+          currentMonth--;
+        }
+        renderCalendar();
+      });
+
+      document.getElementById('next-month').addEventListener('click', () => {
+        if (currentMonth === 11) {
+          currentMonth = 0;
+          currentYear++;
+        } else {
+          currentMonth++;
+        }
+        renderCalendar();
+      });
+
+      yearInput.addEventListener('change', () => {
+        const year = parseInt(yearInput.value);
+        if (!isNaN(year) && year >= 1900 && year <= 2100) {
+          currentYear = year;
+          renderCalendar();
+        } else {
+          yearInput.value = currentYear;
+        }
+      });
+
+      function scrollToBottom() {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      function sendTextMessage(text) {
+        const userMsg = document.createElement('div');
+        userMsg.className = 'message user';
+        userMsg.textContent = text;
+        chatMessages.appendChild(userMsg);
+        scrollToBottom();
+
+        fetch('/send_message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text }),
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const botMsg = document.createElement('div');
+            botMsg.className = 'message bot';
+            botMsg.textContent = data.response;
+            chatMessages.appendChild(botMsg);
+            scrollToBottom();
+            if (data.events) updateCalendarFromEvents(data.events);
+          }
+        })
+        .catch(() => {
+          const botMsg = document.createElement('div');
+          botMsg.className = 'message bot';
+          botMsg.textContent = '❌ Ошибка соединения.';
+          chatMessages.appendChild(botMsg);
+          scrollToBottom();
+        });
+      }
+
+      sendBtn.addEventListener('click', () => {
+        const text = userInput.value.trim();
+        if (text) {
+          userInput.value = '';
+          sendTextMessage(text);
+        }
+      });
+
+      userInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          const text = userInput.value.trim();
+          if (text) {
+            userInput.value = '';
+            sendTextMessage(text);
+          }
+        }
+      });
+
+      applyFiltersBtn.addEventListener('click', () => {
+        const filters = {
+          city: document.getElementById('city-filter').value,
+          date: document.getElementById('date-filter').value.trim(),
+          guests: document.getElementById('guests-filter').value,
+          speakers: document.getElementById('speakers-filter').value,
+          type: document.getElementById('type-filter').value
+        };
+
+        let displayParts = [];
+        if (filters.type) displayParts.push(filters.type);
+        if (filters.city) displayParts.push(filters.city);
+        if (filters.date) displayParts.push(`дата ${filters.date}`);
+        if (filters.guests) displayParts.push(`гостей ${filters.guests}`);
+        if (filters.speakers) displayParts.push(`спикеров ${filters.speakers}`);
+
+        if (displayParts.length === 0) {
+          alert("Выберите хотя бы один фильтр.");
+          return;
+        }
+
+        const displayText = "Поиск по фильтрам: " + displayParts.join(", ");
+        const userMsg = document.createElement('div');
+        userMsg.className = 'message user';
+        userMsg.textContent = displayText;
+        chatMessages.appendChild(userMsg);
+        scrollToBottom();
+
+        fetch('/send_filters', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filters: filters }),
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const botMsg = document.createElement('div');
+            botMsg.className = 'message bot';
+            botMsg.textContent = data.response;
+            chatMessages.appendChild(botMsg);
+            scrollToBottom();
+            if (data.events) updateCalendarFromEvents(data.events);
+          }
+        })
+        .catch(() => {
+          const botMsg = document.createElement('div');
+          botMsg.className = 'message bot';
+          botMsg.textContent = '❌ Ошибка при обработке фильтров.';
+          chatMessages.appendChild(botMsg);
+          scrollToBottom();
+        });
+      });
+
+      scrollToBottom();
+    });
+  </script>
+</body>
+</html>
