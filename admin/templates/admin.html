@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>СберАдмин</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    .bg-video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 1;
+    }
+
+    .container {
+      position: relative;
+      z-index: 2;
+      padding: 32px;
+      height: 100%;
+      overflow: auto;
+      color: white;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 36px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo-img {
+      height: 44px;
+      border-radius: 8px;
+    }
+
+    .logo-text {
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(to right, #00A884, #005FAD);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 1fr 1.8fr;
+      gap: 32px;
+      height: calc(100% - 120px);
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      border-radius: 20px;
+      padding: 32px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-title {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      color: #00A884;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 20px;
+      flex: 1;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 15px;
+      margin-bottom: 10px;
+      font-weight: 500;
+      color: #e2e8f0;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 14px 16px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 14px;
+      color: white;
+      font-size: 16px;
+      outline: none;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: #00A884;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #00A884, #007A5D);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .table-container {
+      flex: 1;
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 14px;
+      text-align: left;
+      font-size: 15px;
+    }
+
+    th {
+      color: #00A884;
+      font-weight: 600;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    td {
+      color: #f1f5f9;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .type-admin { color: #00A884; font-weight: 600; }
+    .type-руководитель { color: #00E5FF; font-weight: 600; }
+    .type-user { color: #e2e8f0; }
+
+    .btn-delete {
+      background: rgba(220, 38, 38, 0.3);
+      color: #f8fafc;
+      border: none;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-delete:hover {
+      background: rgba(220, 38, 38, 0.5);
+    }
+
+    .notification {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      padding: 16px 24px;
+      border-radius: 14px;
+      font-weight: 600;
+      z-index: 1000;
+      max-width: 400px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+      display: none;
+    }
+
+    .notification.success {
+      background: rgba(0, 168, 132, 0.95);
+    }
+
+    .notification.error {
+      background: rgba(220, 38, 38, 0.95);
+    }
+
+    @media (max-width: 1100px) {
+      .main {
+        grid-template-columns: 1fr;
+      }
+      .container {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <video class="bg-video" autoplay muted loop playsinline>
+    <source src="{{ url_for('static', filename='admin.mp4') }}" type="video/mp4">
+  </video>
+  <div class="overlay"></div>
+
+  <div class="container">
+    <div class="header">
+      <div class="logo">
+        <img src="{{ url_for('static', filename='log.png') }}" alt="Логотип" class="logo-img">
+        <div class="logo-text">СберАдмин</div>
+      </div>
+      <div>Привет, Администратор</div>
+    </div>
+
+    <div class="main">
+      <div class="card">
+        <div class="card-title">Создать пользователя</div>
+        <form method="POST" action="{{ url_for('create_user') }}" class="form-grid" id="create-user-form">
+          <div class="form-group">
+            <label>ФИО</label>
+            <input type="text" name="fio" required>
+          </div>
+          <div class="form-group">
+            <label>Тип</label>
+            <select name="type" id="user-type" required>
+              <option value="">Выберите тип</option>
+              <option value="руководитель">Руководитель</option>
+              <option value="user">Обычный пользователь</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" placeholder="example@domain.com" required>
+          </div>
+          <div class="form-group">
+            <label>Руководитель (для user)</label>
+            <select name="manager" id="manager-select">
+              <option value="">— Выберите руководителя —</option>
+              {% for mgr in managers %}
+                <option value="{{ mgr.login }}">{{ mgr.fio }} ({{ mgr.login }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn">Создать пользователя</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Пользователи ({{ users|length }})</div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>ФИО</th>
+                <th>Логин</th>
+                <th>Тип</th>
+                <th>Email</th>
+                <th>Руководитель</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for user in users %}
+              <tr>
+                <td>{{ user.fio or '—' }}</td>
+                <td>{{ user.login or '—' }}</td>
+                <td>
+                  {% if user.type == 'admin' %}
+                    <span class="type-admin">Админ</span>
+                  {% elif user.type == 'руководитель' %}
+                    <span class="type-руководитель">Руководитель</span>
+                  {% else %}
+                    <span class="type-user">Пользователь</span>
+                  {% endif %}
+                </td>
+                <td>{{ user.email or '—' }}</td>
+                <td>{{ user.manager or '—' }}</td>
+                <td>
+                  {% if user.type != 'admin' %}
+                    <form method="POST" action="{{ url_for('delete_user') }}" style="display:inline;">
+                      <input type="hidden" name="login" value="{{ user.login }}">
+                      <button type="submit" class="btn-delete"
+                              onclick="return confirm('Удалить пользователя {{ user.fio or user.login }}?')">
+                        Удалить
+                      </button>
+                    </form>
+                  {% else %}
+                    <span>—</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notification success" id="successMsg"></div>
+  <div class="notification error" id="errorMsg"></div>
+
+  <script>
+    const form = document.getElementById('create-user-form');
+    const userType = document.getElementById('user-type');
+    const managerSelect = document.getElementById('manager-select');
+
+    if (userType && managerSelect) {
+      userType.addEventListener('change', () => {
+        if (userType.value === 'user') {
+          managerSelect.required = true;
+          managerSelect.disabled = false;
+        } else {
+          managerSelect.required = false;
+          managerSelect.disabled = true;
+          managerSelect.value = '';
+        }
+      });
+    }
+
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        if (userType.value === 'user' && !managerSelect.value) {
+          e.preventDefault();
+          alert('Для типа "Обычный пользователь" обязательно выберите руководителя.');
+        }
+      });
+    }
+
+  </script>
+</body>
+</html>
