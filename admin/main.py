@@ -1,8 +1,8 @@
 from flask import Flask, request, render_template, redirect, url_for, flash
-import pandas as pd
 import os
 import re
 import secrets
+import sqlite3
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -10,31 +10,54 @@ from email.mime.multipart import MIMEMultipart
 app = Flask(__name__)
 app.secret_key = 'sber-admin-secret-key'
 
-EXCEL_FILE = r"G:\IT_P\log.xlsx"
+# База данных пользователей
+DATABASE = "users.db"
 
+# Настройки email
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-SMTP_LOGIN = "v1asovd4ny@gmail.com"     
-SMTP_PASSWORD = "fild pggg xbjc acba"      
+SMTP_LOGIN = "v1asovd4ny@gmail.com"
+SMTP_PASSWORD = "fild pggg xbjc acba"
 
-def init_excel():
-    if not os.path.exists(EXCEL_FILE):
-        df = pd.DataFrame(columns=['login', 'pasword', 'type', 'fio', 'email', 'manager'])
-        df.to_excel(EXCEL_FILE, index=False)
+# URL основного приложения (порт 5000 — чат и мероприятия)
+MAIN_APP_URL = "http://127.0.0.1:5000"
 
-def load_users():
-    try:
-        df = pd.read_excel(EXCEL_FILE, dtype=str).fillna('')
-        df['login'] = df['login'].astype(str).str.strip()
-        df['pasword'] = df['pasword'].astype(str).str.strip()
-        df['type'] = df['type'].astype(str).str.strip().str.lower()
-        return df
-    except Exception as e:
-        print(f"Ошибка загрузки Excel: {e}")
-        return pd.DataFrame(columns=['login', 'pasword', 'type', 'fio', 'email', 'manager'])
 
-def save_users(df):
-    df.to_excel(EXCEL_FILE, index=False)
+def init_db():
+    if os.path.exists(DATABASE):
+        return
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            login TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            type TEXT NOT NULL DEFAULT 'user',
+            fio TEXT,
+            email TEXT,
+            manager_login TEXT
+        )
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_login ON users(login);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_type ON users(type);")
+
+    # Админ по умолчанию
+    cursor.execute("""
+        INSERT INTO users (login, password, type, fio, email)
+        VALUES (?, ?, ?, ?, ?)
+    """, ("admin", "admin123", "admin", "Администратор Системы", "admin@example.com"))
+
+    conn.commit()
+    conn.close()
+    print("✅ База данных users.db инициализирована.")
+
+
+def get_db_connection():
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row
+    return conn
+
 
 def generate_login(fio: str) -> str:
     parts = fio.strip().split()
@@ -42,11 +65,74 @@ def generate_login(fio: str) -> str:
         return re.sub(r'[^a-zа-яё0-9]', '', fio.lower())[:20]
     last, first = parts[0], parts[1]
     login = (last + first[0]).lower()
-    login = re.sub(r'[^a-zа-яё0-9]', '', login)
-    return login[:20]
+    return re.sub(r'[^a-zа-яё0-9]', '', login)[:20]
+
+
+def user_exists(login: str) -> bool:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT 1 FROM users WHERE login = ?", (login,))
+    exists = cursor.fetchone() is not None
+    conn.close()
+    return exists
+
+
+def get_all_users():
+    conn = get_db_connection()
+    users = conn.execute("SELECT * FROM users").fetchall()
+    conn.close()
+    return [dict(row) for row in users]
+
+
+def get_user_by_login(login: str):
+    conn = get_db_connection()
+    user = conn.execute("SELECT * FROM users WHERE login = ?", (login,)).fetchone()
+    conn.close()
+    return dict(user) if user else None
+
+
+def get_managers():
+    conn = get_db_connection()
+    managers = conn.execute("SELECT login, fio FROM users WHERE type = 'руководитель'").fetchall()
+    conn.close()
+    return [dict(row) for row in managers]
+
+
+def create_user_in_db(fio, user_type, email, manager_login=None):
+    base_login = generate_login(fio)
+    login = base_login
+    counter = 1
+    while user_exists(login):
+        login = f"{base_login}{counter}"
+        counter += 1
+
+    password = secrets.token_urlsafe(8)
+
+    conn = get_db_connection()
+    try:
+        conn.execute("""
+            INSERT INTO users (login, password, type, fio, email, manager_login)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (login, password, user_type, fio, email, manager_login or ''))
+        conn.commit()
+    finally:
+        conn.close()
+
+    return login, password
+
+
+def delete_user_from_db(login: str):
+    if login == 'admin':
+        raise ValueError("Нельзя удалить администратора")
+    conn = get_db_connection()
+    try:
+        conn.execute("DELETE FROM users WHERE login = ?", (login,))
+        conn.commit()
+    finally:
+        conn.close()
+
 
 def send_welcome_email(to_email, fio, user_type, login, password):
-    """Отправляет красивое письмо через Gmail на ЛЮБУЮ почту."""
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = "Добро пожаловать в СберКалендарь!"
@@ -55,6 +141,7 @@ def send_welcome_email(to_email, fio, user_type, login, password):
 
         position = "Руководитель" if user_type == "руководитель" else "Сотрудник"
 
+        # Используем MAIN_APP_URL — ссылка на основное приложение (порт 5000)
         html = f"""
         <!DOCTYPE html>
         <html lang="ru">
@@ -158,7 +245,7 @@ def send_welcome_email(to_email, fio, user_type, login, password):
                 </div>
               </div>
 
-              <a href="http://127.0.0.1:5000/" class="btn">Перейти в СберКалендарь</a>
+              <a href="{MAIN_APP_URL}" class="btn">Перейти в СберКалендарь</a>
             </div>
             <div class="footer">
               Это письмо сгенерировано автоматически. Не отвечайте на него.
@@ -176,44 +263,36 @@ def send_welcome_email(to_email, fio, user_type, login, password):
             server.login(SMTP_LOGIN, SMTP_PASSWORD.replace(" ", ""))
             server.send_message(msg)
 
-        print(f"✅ Письмо отправлено на {to_email} через Gmail")
+        print(f"✅ Письмо отправлено на {to_email}")
         return True
 
     except Exception as e:
-        print(f"❌ Ошибка Gmail: {e}")
+        print(f"❌ Ошибка отправки email: {e}")
         return False
 
-init_excel()
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         login_input = request.form.get('login', '').strip()
         password_input = request.form.get('password', '').strip()
-
-        df = load_users()
-        user_row = df[df['login'] == login_input]
-
-        if not user_row.empty:
-            stored_password = user_row.iloc[0]['pasword']
-            user_type = user_row.iloc[0]['type']
-            if stored_password == password_input:
-                if user_type == 'admin':
-                    return redirect(url_for('admin'))
-                else:
-                    flash('Доступ разрешён только администраторам.', 'error')
+        user = get_user_by_login(login_input)
+        if user and user['password'] == password_input:
+            if user['type'] == 'admin':
+                return redirect(url_for('admin'))
             else:
-                flash('Неверный пароль.', 'error')
+                flash('Доступ разрешён только администраторам.', 'error')
         else:
-            flash('Пользователь не найден.', 'error')
+            flash('Неверный логин или пароль.', 'error')
     return render_template('login.html')
+
 
 @app.route('/admin')
 def admin():
-    df = load_users()
-    users = df.to_dict(orient='records')
-    managers = df[df['type'] == 'руководитель'][['login', 'fio']].to_dict(orient='records')
+    users = get_all_users()
+    managers = get_managers()
     return render_template('admin.html', users=users, managers=managers)
+
 
 @app.route('/create_user', methods=['POST'])
 def create_user():
@@ -226,41 +305,25 @@ def create_user():
         flash('Все поля обязательны.', 'error')
         return redirect(url_for('admin'))
 
-    df = load_users()
-
-    base_login = generate_login(fio)
-    login = base_login
-    counter = 1
-    while not df[df['login'] == login].empty:
-        login = f"{base_login}{counter}"
-        counter += 1
-
-    password = secrets.token_urlsafe(8)
+    if user_type == 'user' and not manager_login:
+        flash('Выберите руководителя для обычного пользователя.', 'error')
+        return redirect(url_for('admin'))
 
     if user_type == 'user':
-        if not manager_login:
-            flash('Выберите руководителя для обычного пользователя.', 'error')
-            return redirect(url_for('admin'))
-        if df[(df['login'] == manager_login) & (df['type'] == 'руководитель')].empty:
-            flash('Выбранный руководитель не найден.', 'error')
+        manager = get_user_by_login(manager_login)
+        if not manager or manager['type'] != 'руководитель':
+            flash('Выбранный руководитель не найден или не является руководителем.', 'error')
             return redirect(url_for('admin'))
 
-    new_user = pd.DataFrame([{
-        'login': login,
-        'pasword': password,
-        'type': user_type,
-        'fio': fio,
-        'email': email,
-        'manager': manager_login if user_type == 'user' else ''
-    }])
+    try:
+        login, password = create_user_in_db(fio, user_type, email, manager_login if user_type == 'user' else None)
+        send_welcome_email(email, fio, user_type, login, password)
+        flash(f'Пользователь создан! Пароль отправлен на почту {email}.', 'success')
+    except Exception as e:
+        flash(f'Ошибка при создании пользователя: {e}', 'error')
 
-    df = pd.concat([df, new_user], ignore_index=True)
-    save_users(df) 
-
-    send_welcome_email(email, fio, user_type, login, password)
-
-    flash(f'Пользователь создан! Пароль отправлен на почту {email}.', 'success')
     return redirect(url_for('admin'))
+
 
 @app.route('/delete_user', methods=['POST'])
 def delete_user():
@@ -269,19 +332,17 @@ def delete_user():
         flash('Не указан логин.', 'error')
         return redirect(url_for('admin'))
 
-    df = load_users()
-    if df[df['login'] == login_to_delete].empty:
-        flash('Пользователь не найден.', 'error')
-        return redirect(url_for('admin'))
+    try:
+        delete_user_from_db(login_to_delete)
+        flash('Пользователь успешно удалён.', 'success')
+    except ValueError as ve:
+        flash(str(ve), 'error')
+    except Exception as e:
+        flash(f'Ошибка при удалении: {e}', 'error')
 
-    if df.loc[df['login'] == login_to_delete, 'type'].iloc[0] == 'admin':
-        flash('Нельзя удалить администратора.', 'error')
-        return redirect(url_for('admin'))
-
-    df = df[df['login'] != login_to_delete]
-    save_users(df)
-    flash('Пользователь удалён.', 'success')
     return redirect(url_for('admin'))
 
+
 if __name__ == '__main__':
+    init_db()
     app.run(host='0.0.0.0', port=5001, debug=True)
