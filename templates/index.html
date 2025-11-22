@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Агент планирования</title>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -21,15 +21,6 @@
     body {
       background-color: #000;
       position: relative;
-    }
-
-    .global-logo {
-      position: absolute;
-      top: 15px;
-      left: 15px;
-      z-index: 1000;
-      height: 40px;
-      width: auto;
     }
 
     .global-logout {
@@ -77,8 +68,6 @@
       z-index: 10;
       display: flex;
       justify-content: center;
-      align-items: flex-start;
-      padding: 20px;
       height: 100%;
       width: 100%;
       overflow: hidden;
@@ -88,8 +77,9 @@
       display: flex;
       gap: 72px;
       height: 100%;
-      max-width: 100%;
-      overflow: visible;
+      max-width: 1440px;
+      padding: 20px;
+      width: 100%;
     }
 
     .left-panel {
@@ -135,9 +125,8 @@
       display: flex;
       flex-direction: column;
       flex: 1;
-      padding: 0 32px;
+      padding: 0 32px 32px;
       overflow: hidden;
-      position: relative;
     }
 
     .chat-messages {
@@ -196,7 +185,6 @@
       flex-direction: column;
       gap: 16px;
       flex-shrink: 0;
-      padding: 0 0 32px;
       margin-top: auto;
     }
 
@@ -422,26 +410,41 @@
       background: rgba(0, 0, 0, 0.05);
     }
 
-    #events-sidebar {
+    /* Sidebars */
+    #events-sidebar,
+    #requests-sidebar {
       position: fixed;
       top: 0;
-      right: -400px;
-      width: 400px;
+      width: 100%;
       height: 100%;
       background: rgba(25, 25, 25, 0.96);
       color: white;
       padding: 32px;
       overflow-y: auto;
       z-index: 1001;
-      transition: right 0.3s ease;
-      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.6);
+      transition: transform 0.3s ease;
+    }
+
+    #events-sidebar {
+      right: 0;
+      transform: translateX(100%);
     }
 
     #events-sidebar.active {
-      right: 0;
+      transform: translateX(0);
     }
 
-    #events-sidebar-header {
+    #requests-sidebar {
+      left: 0;
+      transform: translateX(-100%);
+    }
+
+    #requests-sidebar.active {
+      transform: translateX(0);
+    }
+
+    #events-sidebar-header,
+    #requests-sidebar-header {
       font-size: 24px;
       font-weight: 600;
       margin-bottom: 24px;
@@ -450,7 +453,8 @@
       align-items: center;
     }
 
-    #close-sidebar {
+    #close-sidebar,
+    #close-requests-sidebar {
       background: #444;
       border: none;
       color: white;
@@ -464,7 +468,8 @@
       justify-content: center;
     }
 
-    .event-item {
+    .event-item,
+    .request-item {
       background: rgba(60, 60, 60, 0.6);
       padding: 16px;
       margin-bottom: 16px;
@@ -485,64 +490,6 @@
       font-size: 16px;
       margin-bottom: 6px;
       color: white;
-    }
-
-    .no-events {
-      color: #888;
-      font-style: italic;
-      text-align: center;
-      padding: 20px;
-    }
-
-    #requests-sidebar {
-      position: fixed;
-      top: 0;
-      left: -400px;
-      width: 400px;
-      height: 100%;
-      background: rgba(25, 25, 25, 0.96);
-      color: white;
-      padding: 32px;
-      overflow-y: auto;
-      z-index: 100;
-      transition: left 0.3s ease;
-      box-shadow: 4px 0 20px rgba(0, 0, 0, 0.6);
-    }
-
-    #requests-sidebar.active {
-      left: 0;
-    }
-
-    #requests-sidebar-header {
-      font-size: 24px;
-      font-weight: 600;
-      margin-bottom: 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    #close-requests-sidebar {
-      background: #444;
-      border: none;
-      color: white;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      cursor: pointer;
-      font-size: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .request-item {
-      background: rgba(60, 60, 60, 0.6);
-      padding: 16px;
-      margin-bottom: 16px;
-      border-radius: 14px;
-      font-size: 15px;
-      line-height: 1.4;
     }
 
     .request-meta {
@@ -576,19 +523,184 @@
     .btn-approve { background: #2ed573; color: white; }
     .btn-reject { background: #ff4757; color: white; }
 
+    .no-events,
     .no-requests {
       color: #888;
       font-style: italic;
       text-align: center;
       padding: 20px;
     }
+
+    /* === МОБИЛЬНАЯ АДАПТАЦИЯ (только ≤ 768px) === */
+    @media (max-width: 768px) {
+      html, body {
+        height: auto;
+        overflow: visible;
+      }
+
+      /* ВАЖНО: НЕ УБИРАЕМ видео! Оставляем, но с fallback */
+      body {
+        /* Этот фон будет, если видео не загрузится */
+        background: linear-gradient(135deg, #0c0c0c, #1a1a1a);
+      }
+
+      /* Видео остаётся, но делаем его немного менее агрессивным на мобилках */
+      .bg-video {
+        opacity: 0.9;
+        z-index: -3;
+      }
+
+      .overlay {
+        background: rgba(0, 0, 0, 0.5); /* чуть темнее */
+        z-index: -2;
+      }
+
+      .global-logout {
+        position: fixed;
+        z-index: 1000;
+      }
+
+      #app {
+        padding-top: 70px;
+        height: auto;
+        overflow: visible;
+      }
+
+      .container {
+        flex-direction: column;
+        padding: 12px 12px 120px;
+        gap: 24px;
+        height: auto;
+        max-width: 100%;
+        overflow: visible;
+      }
+
+      .left-panel {
+        width: 100% !important;
+        height: 75vh !important;
+        max-height: none !important;
+        min-height: 0;
+        border-radius: 20px !important;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        background: rgba(30, 30, 30, 0.85) !important;
+      }
+
+      .chat-content {
+        padding: 0 16px 16px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .chat-messages {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 12px 0;
+        margin-top: 12px;
+        gap: 12px;
+      }
+
+      .message {
+        padding: 12px 16px;
+        font-size: 15px;
+        max-width: 85%;
+      }
+
+      .input-area {
+        padding-bottom: 10px;
+      }
+
+      .search-input-wrapper {
+        padding: 12px 16px;
+      }
+
+      .search-input {
+        min-height: 44px;
+        font-size: 16px;
+      }
+
+      .send-button {
+        width: 50px;
+        height: 50px;
+      }
+
+      .send-button svg {
+        width: 22px;
+        height: 22px;
+      }
+
+      .right-panel {
+        width: 100% !important;
+        height: auto !important;
+        max-height: none !important;
+        padding: 20px;
+        border-radius: 20px !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        background: rgba(30, 30, 30, 0.85) !important;
+      }
+
+      .right-header {
+        font-size: 20px;
+        margin-bottom: 16px;
+      }
+
+      .filter-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .label {
+        font-size: 15px;
+        min-width: auto;
+      }
+
+      .custom-select select,
+      .date-input,
+      .year-input {
+        padding: 12px 16px;
+        font-size: 15px;
+        border-radius: 16px;
+      }
+
+      .filter-button,
+      .view-all-btn {
+        width: 100%;
+        padding: 14px;
+        font-size: 16px;
+        margin: 0;
+      }
+
+      .calendar-box {
+        display: block;
+        margin-top: 16px;
+      }
+
+      .toggle-calendar {
+        display: none !important;
+      }
+
+      #events-sidebar,
+      #requests-sidebar {
+        width: 100%;
+        padding: 20px;
+        background: rgba(20, 20, 20, 0.95) !important;
+      }
+    }
   </style>
 </head>
 <body>
-  <form method="POST" action="/logout" style="position: absolute; top: 15px; right: 15px; z-index: 1000;">
+
+  <form method="POST" action="/logout">
     <button type="submit" class="global-logout">Выйти</button>
   </form>
 
+  <!-- Видео остаётся ВЕЗДЕ -->
   <video class="bg-video" autoplay muted loop playsinline>
     <source src="{{ url_for('static', filename='video.mp4') }}" type="video/mp4">
   </video>
@@ -685,7 +797,7 @@
             </select>
           </div>
         </div>
-        <div class="filter-button" id="apply-filters">Фильтры</div>
+        <div class="filter-button" id="apply-filters">Поиск</div>
         <div class="view-all-btn" id="view-all-btn">Все мероприятия</div>
 
         <div class="calendar-box">
@@ -732,6 +844,9 @@
     const USER_LOGIN = "{{ session.get('user_login', '') }}";
 
     document.addEventListener('DOMContentLoaded', function() {
+      // НЕ удаляем видео на мобильных! Оставляем его.
+      // Современные браузеры (Safari, Chrome) поддерживают muted autoplay на мобилках.
+
       const chatMessages = document.getElementById('chat-messages');
       const userInput = document.getElementById('user-input');
       const sendBtn = document.getElementById('send-btn');
@@ -810,38 +925,20 @@
             }
             const event = events[0];
             const message = `Зарегистрироваться на мероприятие?\n\n${event.text}`;
-            if (USER_TYPE === 'user') {
-              if (confirm(message)) {
-                fetch('/request_registration', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    event_date: isoDate,
-                    event_text: event.text
-                  })
+            if (confirm(message)) {
+              fetch('/request_registration', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  event_date: isoDate,
+                  event_text: event.text
                 })
-                .then(r => r.json())
-                .then(data => {
-                  alert(data.message || 'Ошибка отправки запроса.');
-                })
-                .catch(() => alert('Не удалось отправить запрос.'));
-              }
-            } else {
-              if (confirm(message)) {
-                fetch('/request_registration', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    event_date: isoDate,
-                    event_text: event.text
-                  })
-                })
-                .then(r => r.json())
-                .then(data => {
-                  alert(data.message || 'Успешно зарегистрированы!');
-                })
-                .catch(() => alert('Ошибка регистрации.'));
-              }
+              })
+              .then(r => r.json())
+              .then(data => {
+                alert(data.message || 'Заявка отправлена.');
+              })
+              .catch(() => alert('Не удалось отправить запрос.'));
             }
           });
 
@@ -916,7 +1013,7 @@
       });
 
       userInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' && !e.shiftKey) {
           const text = userInput.value.trim();
           if (text) {
             userInput.value = '';
@@ -1035,15 +1132,6 @@
         eventsSidebar.classList.remove('active');
       });
 
-      document.addEventListener('click', (e) => {
-        if (eventsSidebar.classList.contains('active') &&
-            !eventsSidebar.contains(e.target) &&
-            !viewAllBtn.contains(e.target)) {
-          eventsSidebar.classList.remove('active');
-        }
-      });
-
-      // === ВАЖНО: функция для загрузки заявок ===
       function loadManagerRequests() {
         fetch('/get_manager_requests')
           .then(r => r.json())
@@ -1052,16 +1140,22 @@
             if (list.length === 0) {
               managerRequestsList.innerHTML = '<p class="no-requests">Нет новых заявок.</p>';
             } else {
-              managerRequestsList.innerHTML = list.map(req => `
-                <div class="request-item">
-                  <div class="request-meta">${req.user_fio} • ${req.event_date}</div>
-                  <div class="request-title">${req.event_text}</div>
-                  <div class="request-actions">
-                    <button class="request-btn btn-approve" onclick="handleRequestAction('${req.user_login}', '${req.event_date}', 'approved')">✅ Принять</button>
-                    <button class="request-btn btn-reject" onclick="handleRequestAction('${req.user_login}', '${req.event_date}', 'rejected')">❌ Отклонить</button>
+              managerRequestsList.innerHTML = list.map(req => {
+                const safeText = (req.event_text || '')
+                  .replace(/&/g, '&amp;')
+                  .replace(/</g, '<')
+                  .replace(/>/g, '>');
+                return `
+                  <div class="request-item" data-user-login="${req.user_login}" data-event-date="${req.event_date}">
+                    <div class="request-meta">${req.user_fio} • ${req.event_date}</div>
+                    <div class="request-title">${safeText}</div>
+                    <div class="request-actions">
+                      <button class="request-btn btn-approve" onclick="handleRequestAction('${req.user_login}', '${req.event_date}', 'approved')">✅ Принять</button>
+                      <button class="request-btn btn-reject" onclick="handleRequestAction('${req.user_login}', '${req.event_date}', 'rejected')">❌ Отклонить</button>
+                    </div>
                   </div>
-                </div>
-              `).join('');
+                `;
+              }).join('');
             }
           })
           .catch(() => {
@@ -1073,7 +1167,7 @@
         viewRequestsBtn.addEventListener('click', () => {
           managerRequestsList.innerHTML = '<p>Загрузка...</p>';
           requestsSidebar.classList.add('active');
-          loadManagerRequests(); // ← загружаем при открытии
+          loadManagerRequests();
         });
       }
 
@@ -1083,27 +1177,39 @@
         });
       }
 
-      document.addEventListener('click', (e) => {
-        if (requestsSidebar.classList.contains('active') &&
-            !requestsSidebar.contains(e.target) &&
-            viewRequestsBtn && !viewRequestsBtn.contains(e.target)) {
-          requestsSidebar.classList.remove('active');
-        }
-      });
-
-      // === Обработка заявки с обновлением списка ===
       window.handleRequestAction = function(user_login, event_date, status) {
         fetch('/update_request', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user_login, event_date, status })
         })
-        .then(() => {
-          // Обновляем список — заявка исчезнет
-          loadManagerRequests();
+        .then(response => {
+          if (!response.ok) throw new Error('Ошибка сервера');
+          const item = document.querySelector(
+            `.request-item[data-user-login="${user_login}"][data-event-date="${event_date}"]`
+          );
+          if (item) item.remove();
+          if (document.querySelectorAll('.request-item').length === 0) {
+            managerRequestsList.innerHTML = '<p class="no-requests">Нет новых заявок.</p>';
+          }
         })
-        .catch(() => alert('Ошибка обработки заявки.'));
+        .catch(() => {
+          alert('❌ Ошибка при обработке заявки.');
+        });
       };
+
+      document.addEventListener('click', (e) => {
+        if (eventsSidebar.classList.contains('active') &&
+            !eventsSidebar.contains(e.target) &&
+            !viewAllBtn.contains(e.target)) {
+          eventsSidebar.classList.remove('active');
+        }
+        if (requestsSidebar.classList.contains('active') &&
+            !requestsSidebar.contains(e.target) &&
+            viewRequestsBtn && !viewRequestsBtn.contains(e.target)) {
+          requestsSidebar.classList.remove('active');
+        }
+      });
 
       scrollToBottom();
     });
