@@ -50,15 +50,3 @@
 - `pip`
 - Доступ к GigaChat API (токен)
 
-### Установка
-```bash
-# Клонировать репозиторий
-git clone https://github.com/ваш-логин/agent-planning.git
-cd agent-planning
-
-# Установить зависимости
-pip install -r requirements.txt
-
-# Настроить переменные окружения
-cp .env.example .env
-# Отредактируйте .env: укажите GIGACHAT_TOKEN, SECRET_KEY и т.д.
