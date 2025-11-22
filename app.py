@@ -5,7 +5,7 @@ import re
 import os
 import urllib3
 from sentence_transformers import SentenceTransformer
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import sqlite3
 import secrets
 import smtplib
@@ -26,7 +26,7 @@ SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 SMTP_LOGIN = "v1asovd4ny@gmail.com"
 SMTP_PASSWORD = "fild pggg xbjc acba"
-ADMIN_EMAIL = "v1asovd4ny@gamil.com"
+ADMIN_EMAIL = "v1asovd4ny@gmail.com"
 
 NORTHWEST_CITIES = [
     "санкт-петербург", "спб", "петербург", "деловой петербург", "питер",
@@ -51,52 +51,22 @@ app.secret_key = secrets.token_hex(16)
 model = SentenceTransformer(MODEL_NAME, device="cpu")
 
 # === Вспомогательные функции ===
+
 def parse_date_to_date_obj(date_str):
+    """
+    Парсит ТОЛЬКО дату в формате YYYY-MM-DD.
+    Любые другие форматы или мусор — игнорируются.
+    """
     if not date_str:
         return None
     s = str(date_str).strip()
-    if not s:
-        return None
-
-    range_split = re.split(r'\s*[-–—]\s*', s, maxsplit=1)
-    first_part = range_split[0].strip()
-
-    try:
-        if re.fullmatch(r'\d{4}-\d{2}-\d{2}', first_part):
-            return datetime.strptime(first_part, "%Y-%m-%d").date()
-    except:
-        pass
-
-    s_norm = re.sub(r'[./]', '.', first_part)
-    clean = re.sub(r'[^\d.]', '', s_norm)
-    parts = [p for p in clean.split('.') if p]
-    if len(parts) == 3:
-        d, m, y = parts
-        if len(y) == 2:
-            y = '20' + y
-        if len(d) <= 2 and len(m) <= 2 and len(y) == 4:
+    if len(s) >= 10:
+        candidate = s[:10]
+        if re.fullmatch(r'\d{4}-\d{2}-\d{2}', candidate):
             try:
-                return datetime.strptime(f"{d}.{m}.{y}", "%d.%m.%Y").date()
+                return datetime.strptime(candidate, "%Y-%m-%d").date()
             except ValueError:
                 pass
-
-    month_map = {
-        'января': 1, 'февраля': 2, 'марта': 3, 'апреля': 4,
-        'мая': 5, 'июня': 6, 'июля': 7, 'августа': 8,
-        'сентября': 9, 'октября': 10, 'ноября': 11, 'декабря': 12
-    }
-    text_clean = re.sub(r'[^\w\s]', ' ', first_part.lower())
-    match = re.search(r'(\d{1,2})\s+([а-яё]+)(?:\s+(\d{4}))?', text_clean)
-    if match:
-        day, month_word, year = match.groups()
-        month_num = month_map.get(month_word)
-        if month_num:
-            year = year or "2025"
-            try:
-                return datetime(year=int(year), month=month_num, day=int(day)).date()
-            except ValueError:
-                pass
-
     return None
 
 def is_future_or_today(date_str):
@@ -116,7 +86,7 @@ def get_user_from_db(login):
     conn.close()
     return dict(row) if row else None
 
-# === Векторный поиск (без изменений) ===
+# === Векторный поиск ===
 def is_it_related(query: str) -> bool:
     query_lower = query.lower().strip()
     if extract_northwest_geo_hints(query):
@@ -244,8 +214,16 @@ def send_approval_email(user_fio, event_text, manager_fio):
         print(f"❌ Ошибка отправки email админу: {e}")
         return False
 
-# === Роуты ===
+# === Подготовка текста для векторизации ===
+def clean_event_for_embedding(text: str) -> str:
+    text = re.sub(r'\b\d+\s*(участник|человек|персон|чел\.?)\b', '', text, flags=re.IGNORECASE)
+    parts = re.split(r'[–—:]', text, maxsplit=1)
+    core = parts[0].strip()
+    if len(core.split()) < 2:
+        core = text.strip()
+    return re.sub(r'\s+', ' ', core)
 
+# === РОУТЫ ===
 @app.route('/')
 def index():
     if 'user_login' not in session:
@@ -387,11 +365,13 @@ def get_future_events():
         with open(DB_PATH, "r", encoding="utf-8") as f:
             db = json.load(f)
         events = []
+        today = date.today()
         for item in db:
-            d_obj = parse_date_to_date_obj(item.get("date", ""))
-            if d_obj and d_obj >= date.today():
+            raw_date = item.get("date", "")
+            event_date_obj = parse_date_to_date_obj(raw_date)
+            if event_date_obj and event_date_obj >= today:
                 events.append({
-                    "date": d_obj.strftime("%Y-%m-%d"),
+                    "date": event_date_obj.strftime("%Y-%m-%d"),
                     "text": item.get("text", "").strip()
                 })
         return jsonify({"success": True, "events": events})
@@ -414,21 +394,28 @@ def get_all_events():
         for item in db:
             raw_date = item.get("date", "")
             event_text = item.get("text", "").strip()
+
             event_date_obj = parse_date_to_date_obj(raw_date)
+
+            # Определяем тип
             event_type = ""
             for kw in STRICT_KEYWORDS:
                 if kw.lower() in event_text.lower():
                     event_type = kw
                     break
+
+            # Определяем город
             city = ""
             text_lower = event_text.lower()
             for c in NORTHWEST_CITIES:
                 if c in text_lower:
                     city = c.capitalize()
                     break
+
             display_date = raw_date
             if event_date_obj:
                 display_date = event_date_obj.strftime("%d.%m.%y")
+
             event_data = {
                 "title": event_text,
                 "description": "",
@@ -438,16 +425,18 @@ def get_all_events():
                 "guests_count": 0,
                 "speakers_count": 0
             }
+
             if event_date_obj and event_date_obj >= today:
                 active_events.append(event_data)
             else:
                 past_events.append(event_data)
+
         return jsonify({"success": True, "active": active_events, "past": past_events})
     except Exception as e:
         print("Ошибка в /get_all_events:", e)
         return jsonify({"success": False, "error": "Не удалось загрузить мероприятия"}), 500
 
-# === ЗАЯВКИ ===
+# === Заявки ===
 @app.route('/request_registration', methods=['POST'])
 def request_registration():
     if 'user_login' not in session:
@@ -463,11 +452,9 @@ def request_registration():
     user_type = session['user_type']
     user = get_user_from_db(session['user_login'])
 
-    # Руководитель регистрируется сразу
     if user_type in ('руководитель', 'admin'):
         return jsonify({"success": True, "message": "Вы успешно зарегистрированы на мероприятие."})
 
-    # Обычный пользователь — отправляет заявку
     if user_type == 'user':
         manager_login = user.get('manager_login')
         if not manager_login:
@@ -527,5 +514,6 @@ def update_request():
     save_requests(requests)
     return jsonify({"success": True})
 
+# === ЗАПУСК ===
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5432, debug=True)
